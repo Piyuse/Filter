@@ -71,7 +71,7 @@ def create_app(test_config=None):
         text = data.get('text') if isinstance(data, dict) else None
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_TEXT * 4:
             raise UserInputError('Provide valid anonymized text for export.')
-        return send_file(export_pdf(text), mimetype='application/pdf', as_attachment=True, download_name='veil-anonymized.pdf')
+        return send_file(export_pdf(text), mimetype='application/pdf', as_attachment=True, download_name='filter-anonymized.pdf')
 
     @app.errorhandler(UserInputError)
     def invalid(error):
@@ -104,4 +104,4 @@ if __name__ == '__main__':
     logging.getLogger('waitress').setLevel(logging.INFO)
     serve(create_app(), host=os.environ.get('HOST', '127.0.0.1'), port=int(os.environ.get('PORT', '5000')),
           inbuf_overflow=12 * 1024 * 1024, max_request_body_size=11 * 1024 * 1024,
-          threads=2, channel_timeout=60, ident='Veil')
+          threads=2, channel_timeout=60, ident='Filter')

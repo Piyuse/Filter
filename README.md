@@ -1,4 +1,4 @@
-# Veil — Local PII / PHI anonymizer
+# Filter — Local PII / PHI anonymizer
 
 Flask + React application for reviewing and masking sensitive information before sharing text with an LLM. **Detection, parsing, language identification, NLP and OCR run locally; no external LLM APIs are used.** No API keys are needed.
 
@@ -48,8 +48,8 @@ Without Tesseract, TXT, DOCX and PDFs with text layers still work. Image/scanned
 ### Docker (includes NER model and OCR)
 
 ```sh
-docker build -t veil-local .
-docker run --rm --name veil-local -p 127.0.0.1:5000:5000 --read-only --tmpfs /tmp:rw,noexec,nosuid,size=128m veil-local
+docker build -t filter-local .
+docker run --rm --name filter-local -p 127.0.0.1:5000:5000 --read-only --tmpfs /tmp:rw,noexec,nosuid,size=128m filter-local
 ```
 
 The multi-stage image bundles the React build, spaCy model, Tesseract and English OCR data. It runs as a non-root user. The image needs network access **during the build** for dependencies; processing needs no outbound network. Docker configuration is provided but was not executed in this Windows workspace.
@@ -73,7 +73,8 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the local Flask server. No pe
 - Detect names, locations, SSNs, context-labeled national IDs, Aadhaar-shaped numbers, PAN-shaped IDs, dates and DOBs, emails, phones, MRNs, lab accession/sample/barcode IDs, street addresses and postal codes.
 - Combine regex and contextual patterns with an **installed offline spaCy model**. Priority-based overlap handling masks the entire connected span. Full repeated names/values receive consistent tokens within a request.
 - Choose semantic tokens such as `[PATIENT_NAME_1]`, `[DATE_OF_BIRTH_1]`, `[SSN_MASKED_1]`, `[LAB_ID_1]`, `[REDACTED]`, or solid blocks.
-- Review color-coded entities, language, category counts and engine warnings. Choose detection categories.
+- Review monochrome entity highlights, language, category counts and engine warnings. Entity types use labels and distinct border patterns rather than color. Choose detection categories.
+- Use a black, white and neutral grayscale interface with a 12px minimum font size, including mobile layouts, tooltips, dialogs and badges. Editor text is 14px.
 - Copy the anonymized text or export TXT / a fresh text-only PDF. Original files, PDF metadata, images and document structure are not copied to exports.
 - Clear the session. Original content and results are held in React component memory; browser storage is not used.
 
@@ -95,7 +96,8 @@ app/
   errors.py        Safe user-facing errors, separate from parser exceptions
 frontend/
   src/main.jsx     React UI, uploads, review, settings and exports
-  src/styles.css   Responsive interface and entity colors
+  src/styles.css   Responsive interface and layout
+  src/theme.css    Monochrome palette and 12px-minimum typography
   vite.config.js   Same-origin development API proxy
 tests/
   test_pipeline.py API, detection, extraction, export and privacy regressions

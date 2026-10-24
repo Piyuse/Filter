@@ -23,7 +23,7 @@ def export_pdf(text):
     story = []
     for line in text.split('\n'):
         story.extend([Paragraph(escape(line) or ' ', style), Spacer(1, 4)])
-    SimpleDocTemplate(buffer, title='Anonymized document', author='Veil',
+    SimpleDocTemplate(buffer, title='Anonymized document', author='Filter',
         leftMargin=48, rightMargin=48, topMargin=48, bottomMargin=48).build(story)
     buffer.seek(0)
     return buffer

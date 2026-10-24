@@ -1,15 +1,15 @@
 .ocr-review {
   margin-top: 16px;
   padding: 15px 18px;
-  border: 1px solid #d9e4d2;
+  border: 1px solid #e0e0e0;
   border-radius: 7px;
-  background: #f2f7ed;
-  color: #48633e;
+  background: #f5f5f5;
+  color: #5b5b5b;
 }
 .ocr-review.needs-review {
-  border-color: #e4d6ae;
-  background: #fcf7e9;
-  color: #77612e;
+  border-color: #d6d6d6;
+  background: #f7f7f7;
+  color: #626262;
 }
 .ocr-review-heading {
   display: flex;
@@ -19,8 +19,8 @@
   font-size: 12px;
 }
 .ocr-review-heading strong { font-weight: 500; }
-.ocr-review-heading span { margin-left: auto; font-size: 10px; }
-.ocr-review p { font-size: 11px; line-height: 1.8; margin: 9px 0 0; }
+.ocr-review-heading span { margin-left: auto; font-size: 12px; }
+.ocr-review p { font-size: 12px; line-height: 1.8; margin: 9px 0 0; }
 @media (max-width: 650px) {
   .ocr-review { padding: 13px; }
   .ocr-review-heading span { margin-left: 25px; width: 100%; }

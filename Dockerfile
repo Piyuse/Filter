@@ -14,8 +14,8 @@ COPY requirements*.txt ./
 RUN pip install --no-cache-dir -r requirements-ner.txt
 COPY app/ ./app/
 COPY --from=frontend /build/dist ./frontend/dist/
-RUN useradd --create-home veil
-USER veil
+RUN useradd --create-home filter
+USER filter
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health', timeout=3)"
 CMD ["python", "-m", "app.main"]

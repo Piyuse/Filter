@@ -1,5 +1,5 @@
 {
-  "name": "veil-local-anonymizer",
+  "name": "filter-local-anonymizer",
   "version": "1.0.0",
   "private": true,
   "type": "module",
