@@ -1,0 +1,56 @@
+/* Keep the editors' existing responsive dimensions while bringing them up top. */
+html { scrollbar-gutter: stable; }
+.compact-shell { display: block; }
+.compact-main {
+  width: calc(100% - 228px);
+  margin: 0 0 0 228px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.workspace-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 18px;
+  color: #666666;
+  font-size: 12px;
+}
+.workspace-footer-links { display: flex; gap: 18px; }
+.workspace-footer button { font-size: 12px; padding: 0; }
+.workspace-footer .engine-note { margin: 0; }
+.compact-shell .toast { left: 50%; }
+
+/* One shared file row keeps both editor text areas on the same baseline. */
+.upload-zone.has-document { padding: 12px 20px; justify-content: flex-start; gap: 10px; }
+.upload-zone.has-document > div { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+.uploaded-file-name, .document-source { display: flex; align-items: center; gap: 7px; color: #555555; font-size: 12px; }
+.uploaded-file-name { min-width: 0; overflow-wrap: anywhere; }
+.uploaded-file-name svg, .document-source svg { flex-shrink: 0; }
+.document-source { padding: 12px 20px; border-bottom: 1px solid #d4d4d4; background: #f7f7f7; }
+.document-source span { overflow-wrap: anywhere; min-width: 0; }
+.compact-shell .text-surface textarea,
+.compact-shell .document-text {
+  margin: 0;
+  padding: 8px 20px 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+}
+.compact-shell .text-surface textarea::placeholder { line-height: 1.6; }
+.compact-shell .anonymized { font-family: Arial, Helvetica, sans-serif; line-height: 1.6; }
+@media (max-width: 1200px) {
+  .compact-main { width: calc(100% - 196px); margin-left: 196px; }
+}
+@media (max-width: 900px) {
+  .compact-main { width: calc(100% - 72px); margin-left: 72px; }
+  .compact-shell .brand { margin: 0 0 40px; min-height: 39px; justify-content: center; }
+  .compact-shell .brand-name { display: inline; font-size: 14px; letter-spacing: 0; }
+}
+@media (max-width: 650px) {
+  .compact-main { width: 100%; margin-left: 0; padding-top: 12px; }
+}

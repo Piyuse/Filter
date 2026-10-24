@@ -11,6 +11,8 @@ from pypdf import PdfReader
 from docx import Document
 from .errors import UserInputError
 from .ocr import recognize, diagnostics
+from .pdf_text import extract_pdf_page
+from .text_format import format_document_text
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_PAGES = 20
@@ -97,7 +99,7 @@ def extract_text(file, *, metadata=None):
             content = page.get_contents()
             if content and len(content.get_data()) > 20 * 1024 * 1024:
                 raise UserInputError('PDF page exceeds the safe extraction limit.')
-            part = page.extract_text() or ''
+            part = extract_pdf_page(page)
             if not part.strip():
                 import pypdfium2 as pdfium
                 if raster is None:
@@ -126,6 +128,8 @@ def extract_text(file, *, metadata=None):
                     image.seek(frame)
                     parts.append(image_text(image, ocr_details))
                 text = '\n\n'.join(parts)
+    if suffix != '.txt':
+        text = format_document_text(text)
     if not text.strip():
         raise UserInputError('No readable text found. Check the document or OCR language settings.')
     if len(text) > 100000:

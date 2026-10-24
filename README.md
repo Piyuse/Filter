@@ -68,6 +68,8 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the local Flask server. No pe
 
 - Paste up to 100,000 characters with live word and character counts, or upload PDF, DOCX, UTF-8 TXT, PNG, JPEG, TIFF or WebP. WebP images use the same offline OCR and quality checks as other images.
 - Extract text locally using pypdf / python-docx / Pillow / Tesseract; rasterize scanned PDF pages using PDFium.
+- Reconstruct PDF lines from page positions so individually positioned words stay together. Normalize extraction padding before detection while keeping separate rows and paragraph gaps. Unsupported or incomplete layout extraction falls back to the complete plain text. Re-upload a document after updating the backend to refresh previously extracted text.
+- Clean PDF, DOCX and OCR extraction padding, repeated horizontal spaces and excessive blank lines, while preserving paragraph, label, list and table-row boundaries. Pasted text and TXT uploads keep their original whitespace. The two editors share the same text typography and an aligned file-source row.
 - Scale small images (up to 4×), flatten transparency onto white, and combine page and sparse-layout OCR passes by spatial region. Display low-resolution/uncertain-word warnings and mean word confidence. Processing stays offline and shares a 30-second OCR budget per page.
 - Identify language with deterministic, seeded `langdetect`; show its code and probability estimate after processing.
 - Detect names, locations, SSNs, context-labeled national IDs, Aadhaar-shaped numbers, PAN-shaped IDs, dates and DOBs, emails, phones, MRNs, lab accession/sample/barcode IDs, street addresses and postal codes.
@@ -75,6 +77,7 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the local Flask server. No pe
 - Choose semantic tokens such as `[PATIENT_NAME_1]`, `[DATE_OF_BIRTH_1]`, `[SSN_MASKED_1]`, `[LAB_ID_1]`, `[REDACTED]`, or solid blocks.
 - Review monochrome entity highlights, language, category counts and engine warnings. Entity types use labels and distinct border patterns rather than color. Choose detection categories.
 - Use a black, white and neutral grayscale interface with a 12px minimum font size, including mobile layouts, tooltips, dialogs and badges. Editor text is 14px.
+- Open directly into the paste/upload and side-by-side review workspace beside the Filter sidebar. Introductory headings and banners are omitted; navigation, help and privacy details remain available. The editors retain their existing responsive dimensions.
 - Copy the anonymized text or export TXT / a fresh text-only PDF. Original files, PDF metadata, images and document structure are not copied to exports.
 - Clear the session. Original content and results are held in React component memory; browser storage is not used.
 
@@ -90,6 +93,7 @@ app/
   language.py      Local statistical language detection
   redactor.py      Overlap resolution and consistent substitutions
   extraction.py    PDF, DOCX, TXT and image/OCR parsing
+  text_format.py   Conservative whitespace cleanup for extracted documents
   ocr.py           Image preprocessing, layout passes and quality diagnostics
   exports.py       Text-only PDF generation
   schemas.py       Public response type definitions
@@ -98,6 +102,7 @@ frontend/
   src/main.jsx     React UI, uploads, review, settings and exports
   src/styles.css   Responsive interface and layout
   src/theme.css    Monochrome palette and 12px-minimum typography
+  src/workspace.css Compact workspace placement, preserving editor dimensions
   vite.config.js   Same-origin development API proxy
 tests/
   test_pipeline.py API, detection, extraction, export and privacy regressions
