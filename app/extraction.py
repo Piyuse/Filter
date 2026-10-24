@@ -5,33 +5,59 @@ from zipfile import ZipFile, BadZipFile
 import os
 import shutil
 import warnings
-from PIL import Image, ImageOps
+from PIL import Image
 import pytesseract
 from pypdf import PdfReader
 from docx import Document
 from .errors import UserInputError
+from .ocr import recognize, diagnostics
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_PAGES = 20
 Image.MAX_IMAGE_PIXELS = 20_000_000
-if os.environ.get('TESSERACT_CMD'):
-    pytesseract.pytesseract.tesseract_cmd = os.environ['TESSERACT_CMD']
+
+def find_tesseract():
+    """Use a configured executable or a local install without relying on stale PATH."""
+    configured = os.environ.get('TESSERACT_CMD')
+    if configured:
+        return configured
+    local = Path(__file__).resolve().parent.parent / '.tools' / 'tesseract' / 'tesseract.exe'
+    if local.is_file():
+        return str(local)
+    executable = shutil.which('tesseract')
+    if executable:
+        return executable
+    if os.name == 'nt':
+        roots = [Path(os.environ.get('ProgramFiles', 'C:/Program Files')),
+                 Path(os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')),
+                 Path(os.environ.get('LOCALAPPDATA', str(Path.home() / 'AppData/Local'))) / 'Programs']
+        for root in roots:
+            candidate = root / 'Tesseract-OCR' / 'tesseract.exe'
+            if candidate.is_file():
+                return str(candidate)
+    return 'tesseract'
 
 def ocr_available():
+    # Resolve on each check so installing OCR does not require a terminal or PC
+    # restart and the health route uses the same executable as upload processing.
+    pytesseract.pytesseract.tesseract_cmd = find_tesseract()
     return bool(shutil.which(pytesseract.pytesseract.tesseract_cmd))
 
-def image_text(image):
+def image_text(image, details=None):
     if not ocr_available():
         raise UserInputError('OCR needs local Tesseract. Install it and set TESSERACT_CMD; text-based PDF, DOCX and TXT still work.')
     if image.width * image.height > Image.MAX_IMAGE_PIXELS:
         raise UserInputError('Image exceeds the 20 megapixel limit.')
-    return pytesseract.image_to_string(ImageOps.exif_transpose(image).convert('RGB'),
-        lang=os.environ.get('OCR_LANG', 'eng'), timeout=30)
+    result = recognize(image)
+    if details is not None:
+        details.append(result)
+    return result.text
 
-def extract_text(file):
+def extract_text(file, *, metadata=None):
+    ocr_details = []
     suffix = Path(file.filename or '').suffix.lower()
-    if suffix not in ('.txt', '.docx', '.pdf', '.png', '.jpg', '.jpeg', '.tif', '.tiff'):
-        raise UserInputError('Supported files: PDF, DOCX, TXT, PNG, JPG and TIFF.')
+    if suffix not in ('.txt', '.docx', '.pdf', '.png', '.jpg', '.jpeg', '.tif', '.tiff', '.webp'):
+        raise UserInputError('Supported files: PDF, DOCX, TXT, PNG, JPG, TIFF and WebP.')
     raw = file.stream.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
         raise UserInputError('Files must be smaller than 10 MB.')
@@ -81,7 +107,7 @@ def extract_text(file):
                     raise UserInputError('Scanned PDF page exceeds the image size limit.')
                 bitmap = pdf_page.render(scale=2)
                 try:
-                    part = image_text(bitmap.to_pil())
+                    part = image_text(bitmap.to_pil(), ocr_details)
                 finally:
                     bitmap.close()
                     pdf_page.close()
@@ -98,10 +124,12 @@ def extract_text(file):
                 parts = []
                 for frame in range(getattr(image, 'n_frames', 1)):
                     image.seek(frame)
-                    parts.append(image_text(image))
+                    parts.append(image_text(image, ocr_details))
                 text = '\n\n'.join(parts)
     if not text.strip():
         raise UserInputError('No readable text found. Check the document or OCR language settings.')
     if len(text) > 100000:
         raise UserInputError('Extracted text exceeds the 100,000 character limit.')
+    if metadata is not None:
+        metadata.update(diagnostics(ocr_details))
     return text

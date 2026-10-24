@@ -7,6 +7,7 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 echo Starting Veil. The local NLP model can take a few seconds to load.
+if exist "%~dp0.tools\tesseract\tesseract.exe" set "TESSERACT_CMD=%~dp0.tools\tesseract\tesseract.exe"
 echo Keep this window open while using the app. Press Ctrl+C to stop.
 ".venv\Scripts\python.exe" -m app.main
 if errorlevel 1 (

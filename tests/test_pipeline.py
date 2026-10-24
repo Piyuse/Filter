@@ -142,12 +142,13 @@ def test_international_and_contextual_identifiers(value):
     assert result['entities']
     assert value not in result['text']
 
-@pytest.mark.parametrize('extension', ['png','jpg','tiff'])
+@pytest.mark.parametrize('extension', ['png','jpg','tiff','webp'])
 def test_image_extraction_uses_local_ocr(client, monkeypatch, extension):
     from PIL import Image
     import app.extraction as extraction
     monkeypatch.setattr(extraction, 'ocr_available', lambda: True)
-    monkeypatch.setattr(extraction.pytesseract, 'image_to_string', lambda *a, **kw: 'Patient: Olivia Bennett')
+    from app.ocr import OCRResult
+    monkeypatch.setattr(extraction, 'recognize', lambda image: OCRResult('Patient: Olivia Bennett', 100, 100, .95, 0, 3, True))
     image = BytesIO(); Image.new('RGB',(100,100),'white').save(image, format='JPEG' if extension=='jpg' else extension.upper()); image.seek(0)
     result = client.post('/api/extract', data={'file':(image,'document.'+extension)})
     assert result.status_code == 200 and 'Olivia Bennett' in result.json['text']
@@ -155,7 +156,8 @@ def test_image_extraction_uses_local_ocr(client, monkeypatch, extension):
 def test_scanned_pdf_rasterizes_to_local_ocr(client, monkeypatch):
     import app.extraction as extraction
     monkeypatch.setattr(extraction, 'ocr_available', lambda: True)
-    monkeypatch.setattr(extraction.pytesseract, 'image_to_string', lambda *a, **kw: 'MRN: MR-12345')
+    from app.ocr import OCRResult
+    monkeypatch.setattr(extraction, 'recognize', lambda image: OCRResult('MRN: MR-12345', 1200, 1600, .95, 0, 2, False))
     stream = BytesIO(); pdf = canvas.Canvas(stream); pdf.showPage(); pdf.save(); stream.seek(0)
     result = client.post('/api/extract', data={'file':(stream,'scanned.pdf')})
     assert result.status_code == 200 and 'MR-12345' in result.json['text']

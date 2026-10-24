@@ -24,6 +24,16 @@ On Linux/macOS use `python3 -m venv .venv`, `.venv/bin/python`, and `npm` instea
 
 Install the **Tesseract executable and language data**, separately from the Python wrapper. [Tesseract's installation guide](https://tesseract-ocr.github.io/tessdoc/Installation.html) links to the Windows installer and platform package instructions.
 
+The app checks `.tools/tesseract/tesseract.exe` in this project, PATH, and standard Windows installation folders. `start.bat` explicitly uses the project-local executable when present. To install the Windows program, run:
+
+```powershell
+winget install --id UB-Mannheim.TesseractOCR --exact --source winget
+```
+
+Restart Flask after updating the Python source. Once this version is running, installing OCR is detected without restarting the terminal. An explicit `TESSERACT_CMD` takes priority over automatic detection.
+
+This workspace also has a complete local runtime copied into `.tools/tesseract`, including its DLLs and language data. Keep that directory intact. It is ignored by Git, so another checkout needs its own Tesseract installation or local runtime copy.
+
 ```powershell
 # If Tesseract is not on PATH, set this before starting Flask:
 $env:TESSERACT_CMD = 'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -56,8 +66,9 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the local Flask server. No pe
 
 ## What it does
 
-- Paste up to 100,000 characters with live word and character counts, or upload PDF, DOCX, UTF-8 TXT, PNG, JPEG or TIFF.
+- Paste up to 100,000 characters with live word and character counts, or upload PDF, DOCX, UTF-8 TXT, PNG, JPEG, TIFF or WebP. WebP images use the same offline OCR and quality checks as other images.
 - Extract text locally using pypdf / python-docx / Pillow / Tesseract; rasterize scanned PDF pages using PDFium.
+- Scale small images (up to 4×), flatten transparency onto white, and combine page and sparse-layout OCR passes by spatial region. Display low-resolution/uncertain-word warnings and mean word confidence. Processing stays offline and shares a 30-second OCR budget per page.
 - Identify language with deterministic, seeded `langdetect`; show its code and probability estimate after processing.
 - Detect names, locations, SSNs, context-labeled national IDs, Aadhaar-shaped numbers, PAN-shaped IDs, dates and DOBs, emails, phones, MRNs, lab accession/sample/barcode IDs, street addresses and postal codes.
 - Combine regex and contextual patterns with an **installed offline spaCy model**. Priority-based overlap handling masks the entire connected span. Full repeated names/values receive consistent tokens within a request.
@@ -78,6 +89,7 @@ app/
   language.py      Local statistical language detection
   redactor.py      Overlap resolution and consistent substitutions
   extraction.py    PDF, DOCX, TXT and image/OCR parsing
+  ocr.py           Image preprocessing, layout passes and quality diagnostics
   exports.py       Text-only PDF generation
   schemas.py       Public response type definitions
   errors.py        Safe user-facing errors, separate from parser exceptions
@@ -108,6 +120,8 @@ Example:
 ```
 
 Modes: `tags`, `redact`, `blocks`. `enabled` defaults to all types; an empty list intentionally disables all detection. Entity `start`/`end` offsets are Python Unicode code-point offsets into the original input, with an exclusive end. The React viewer converts text to code points before slicing, including for emoji.
+
+For image or scanned-PDF OCR, `/api/extract` additionally returns `warnings` and `ocr` metadata (word confidence estimate, page count, uncertain-word count and source dimensions). These warnings remain visible through anonymization. Low-resolution previews cannot reliably reproduce tiny, blurred or cropped characters; use the original PDF or a sharper scan when possible. More extracted text does not imply that names and identifiers were read correctly. The app does not use an LLM to guess missing text.
 
 The PDF endpoint exports the supplied text; API callers must send the anonymized result. The UI does so. This endpoint is not an independent anonymizer.
 

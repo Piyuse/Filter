@@ -1,0 +1,27 @@
+.ocr-review {
+  margin-top: 16px;
+  padding: 15px 18px;
+  border: 1px solid #d9e4d2;
+  border-radius: 7px;
+  background: #f2f7ed;
+  color: #48633e;
+}
+.ocr-review.needs-review {
+  border-color: #e4d6ae;
+  background: #fcf7e9;
+  color: #77612e;
+}
+.ocr-review-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+.ocr-review-heading strong { font-weight: 500; }
+.ocr-review-heading span { margin-left: auto; font-size: 10px; }
+.ocr-review p { font-size: 11px; line-height: 1.8; margin: 9px 0 0; }
+@media (max-width: 650px) {
+  .ocr-review { padding: 13px; }
+  .ocr-review-heading span { margin-left: 25px; width: 100%; }
+}

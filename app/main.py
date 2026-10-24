@@ -61,7 +61,9 @@ def create_app(test_config=None):
         file = request.files.get('file')
         if file is None:
             return jsonify(error='Choose a document to upload.'), 400
-        return jsonify(text=extract_text(file))
+        metadata = {}
+        text = extract_text(file, metadata=metadata)
+        return jsonify(text=text, **metadata)
 
     @app.post('/api/export/pdf')
     def pdf():
