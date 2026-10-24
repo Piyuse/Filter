@@ -1,0 +1,18 @@
+.output-header-actions { flex-shrink: 0; gap: 10px; }
+.output-copy-button {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid #dce5d6;
+  border-radius: 5px;
+  background: #f4f8ef;
+  color: #527546;
+}
+.output-copy-button:hover:not(:disabled), .output-copy-button.copied {
+  background: #e4efda;
+  border-color: #b6cba6;
+}
+.output-copy-button:disabled { background: transparent; }
+@media (max-width: 1100px) {
+  .output-header-actions .ready-label { display: none; }
+}
