@@ -1,5 +1,10 @@
 /* Keep the editors' existing responsive dimensions while bringing them up top. */
 html { scrollbar-gutter: stable; }
+.local-ai-setting { border: 1px solid #cccccc; background: #f7f7f7; border-radius: 6px; padding: 14px; margin: 16px 0; }
+.local-ai-setting label { display: flex; align-items: center; gap: 9px; font-size: 14px; }
+.local-ai-setting p { margin: 8px 0; font-size: 12px; line-height: 1.6; }
+.local-ai-setting button { font-size: 12px; text-decoration: underline; }
+.local-ai-result { font-size: 12px; border: 1px solid #cccccc; padding: 5px 8px; border-radius: 4px; }
 .compact-shell { display: block; }
 .compact-main {
   width: calc(100% - 228px);

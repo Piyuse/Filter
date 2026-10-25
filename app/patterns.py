@@ -1,6 +1,7 @@
 """Local detection rules. Offsets always refer to the unmodified original text."""
 import re
 from dataclasses import dataclass
+from .numeric_context import NumericContext
 
 @dataclass(frozen=True)
 class Candidate:
@@ -8,8 +9,9 @@ class Candidate:
     end: int
     kind: str
     priority: int = 50
+    protected: bool = False
 
-KINDS = ('NAME', 'DOB', 'DATE', 'EMAIL', 'PHONE', 'SSN', 'NATIONAL_ID', 'MRN', 'LAB_ID', 'ADDRESS', 'LOCATION', 'ZIP')
+KINDS = ('NAME', 'DOB', 'DATE', 'EMAIL', 'PHONE', 'SSN', 'NATIONAL_ID', 'MRN', 'LAB_ID', 'ADDRESS', 'LOCATION', 'ZIP', 'SECRET')
 MONTH = r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)'
 DATE = rf'\b(?:\d{{4}}[/-]\d{{1,2}}[/-]\d{{1,2}}|\d{{1,2}}[./-]\d{{1,2}}[./-]\d{{2,4}}|{MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?,?\s+\d{{4}}|\d{{1,2}}\s+{MONTH}\.?\s+\d{{4}})\b'
 RULES = [
@@ -31,10 +33,15 @@ RULES = [
 
 def regex_entities(text):
     found = []
+    numeric = NumericContext(text)
     for kind, pattern, priority in RULES:
         for match in re.finditer(pattern, text, re.IGNORECASE):
             start, end = match.span('value') if 'value' in match.re.groupindex else match.span()
             while end > start and text[end - 1].isspace():
                 end -= 1
+            if kind == 'PHONE' and not numeric.accepts_phone(start, end):
+                continue
+            if kind == 'ZIP' and priority == 40 and numeric.is_measurement(start, end):
+                continue
             found.append(Candidate(start, end, kind, priority))
     return found

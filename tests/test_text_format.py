@@ -115,7 +115,7 @@ def test_pdf_fragmented_pii_reflows_before_detection_and_keeps_fields_separate()
     for value in ['Olivia Bennett', '08/14/1986', 'MR-209481']:
         assert value not in masked['text']
     assert 'DOB: [DATE_OF_BIRTH_1]' in masked['text']
-    assert masked['text'].count('Patient: [PATIENT_NAME_1]') == 2
+    assert masked['text'].count('Patient: [NAME_1]') == 2
     assert [(entity['type'], text[entity['start']:entity['end']])
             for entity in masked['entities']] == [
         ('NAME', 'Olivia Bennett'), ('DOB', '08/14/1986'), ('MRN', 'MR-209481'),
@@ -199,5 +199,5 @@ def test_pdf_mixed_prose_and_clinical_fields_keep_all_word_boundaries():
         'TECHNICAL SUMMARY', *[' '.join(words) for _, words in lines],
     ]
     masked = client.post('/api/anonymize', json={'text': text}).json['text']
-    assert 'Patient: [PATIENT_NAME_1]' in masked
+    assert 'Patient: [NAME_1]' in masked
     assert 'relational databases (MySQL, MSSQL), plus' in masked

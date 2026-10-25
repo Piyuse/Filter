@@ -34,7 +34,7 @@ def test_sensitive_values_removed_and_clinical_context_preserved():
     assert 'Date of birth:' in result['text']
     assert 'Dr.' in result['text']
     assert 'Visit date:' in result['text']
-    assert result['text'].count('[PATIENT_NAME_1]') == 2
+    assert result['text'].count('[NAME_1]') == 2
     assert result['language']['code'] == 'en'
     for a, b in zip(result['entities'], result['entities'][1:]):
         assert a['end'] <= b['start']
@@ -99,7 +99,7 @@ def test_pdf_extraction_and_export_do_not_include_original(client):
     result = client.post('/api/export/pdf', json={'text':clean})
     assert result.status_code == 200 and result.data.startswith(b'%PDF')
     text = '\n'.join(p.extract_text() for p in PdfReader(BytesIO(result.data)).pages)
-    assert 'Olivia Bennett' not in text and 'PATIENT_NAME_1' in text
+    assert 'Olivia Bennett' not in text and 'NAME_1' in text
 
 def test_corrupt_file_never_echoes_parser_data(client):
     result = client.post('/api/extract', data={'file':(BytesIO(b'%PDF secret-patient-name'), 'bad.pdf')})

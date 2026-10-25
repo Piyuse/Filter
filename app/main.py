@@ -6,10 +6,11 @@ from flask import Flask, Request, request, jsonify, send_file, send_from_directo
 from werkzeug.exceptions import HTTPException
 from .redactor import anonymize, MAX_TEXT
 from .patterns import KINDS
-from .nlp import status
+from .presidio_engine import status
+from .local_llm import status as local_llm_status
 from .extraction import extract_text, ocr_available
 from .exports import export_pdf
-from .errors import UserInputError
+from .errors import UserInputError, DetectionUnavailableError
 
 class MemoryRequest(Request):
     def _get_file_stream(self, total_content_length, content_type, filename=None, content_length=None):
@@ -47,14 +48,18 @@ def create_app(test_config=None):
 
     @app.get('/api/health')
     def health():
-        return jsonify(status='ok', local_only=True, ner=status(), ocr=ocr_available(), entity_types=KINDS)
+        detector = status()
+        return jsonify(status='ok' if detector['available'] else 'degraded',
+                       local_only=True, ner=detector, local_llm=local_llm_status(),
+                       ocr=ocr_available(), entity_types=KINDS)
 
     @app.post('/api/anonymize')
     def redact():
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             return jsonify(error='Send a JSON object.'), 400
-        return jsonify(anonymize(data.get('text'), data.get('mode', 'tags'), data.get('enabled')))
+        return jsonify(anonymize(data.get('text'), data.get('mode', 'tags'), data.get('enabled'),
+                                 data.get('use_local_llm', False)))
 
     @app.post('/api/extract')
     def extract():
@@ -76,6 +81,10 @@ def create_app(test_config=None):
     @app.errorhandler(UserInputError)
     def invalid(error):
         return jsonify(error=str(error)), 400
+
+    @app.errorhandler(DetectionUnavailableError)
+    def detector_unavailable(error):
+        return jsonify(error=str(error)), 503
 
     @app.errorhandler(HTTPException)
     def http_error(error):
