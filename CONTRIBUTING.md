@@ -12,8 +12,7 @@ external LLM APIs, remote OCR services, or document-content telemetry.
 
 Search the repository's **Issues** tab for an existing report first. If there is
 no matching issue, open a new one with a short, descriptive title and the details
-below. You do not need to submit code to report a bug.
-
+below
 ```text
 Summary:
 
