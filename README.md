@@ -2,6 +2,8 @@
 
 Flask + React application using **Microsoft Presidio Analyzer** to identify private information before sharing text with an LLM. **Detection, parsing, language identification, NLP and OCR run locally; no LLM inference or external LLM APIs are used.** No API keys or Azure services are needed.
 
+Found a bug or want to contribute? Read [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, development setup, testing, and pull request guidance. Use synthetic examples rather than real personal or medical documents.
+
 ## Quick start (Windows / PowerShell)
 
 Prerequisites: Python 3.12 or 3.13 and Node.js 22+. Run these commands from the project directory:
