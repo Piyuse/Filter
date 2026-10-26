@@ -113,4 +113,5 @@ if __name__ == '__main__':
     logging.getLogger('waitress').setLevel(logging.INFO)
     serve(create_app(), host=os.environ.get('HOST', '127.0.0.1'), port=int(os.environ.get('PORT', '5000')),
           inbuf_overflow=12 * 1024 * 1024, max_request_body_size=11 * 1024 * 1024,
-          threads=2, channel_timeout=60, ident='Filter')
+          threads=2, channel_timeout=60, ident='Filter',trusted_proxy="127.0.0.1",
+trusted_proxy_headers={"x-forwarded-proto"},)
