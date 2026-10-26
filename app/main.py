@@ -7,7 +7,6 @@ from werkzeug.exceptions import HTTPException
 from .redactor import anonymize, MAX_TEXT
 from .patterns import KINDS
 from .presidio_engine import status
-from .local_llm import status as local_llm_status
 from .extraction import extract_text, ocr_available
 from .exports import export_pdf
 from .errors import UserInputError, DetectionUnavailableError
@@ -50,7 +49,7 @@ def create_app(test_config=None):
     def health():
         detector = status()
         return jsonify(status='ok' if detector['available'] else 'degraded',
-                       local_only=True, ner=detector, local_llm=local_llm_status(),
+                       local_only=True, ner=detector,
                        ocr=ocr_available(), entity_types=KINDS)
 
     @app.post('/api/anonymize')
@@ -58,8 +57,7 @@ def create_app(test_config=None):
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             return jsonify(error='Send a JSON object.'), 400
-        return jsonify(anonymize(data.get('text'), data.get('mode', 'tags'), data.get('enabled'),
-                                 data.get('use_local_llm', False)))
+        return jsonify(anonymize(data.get('text'), data.get('mode', 'tags'), data.get('enabled')))
 
     @app.post('/api/extract')
     def extract():

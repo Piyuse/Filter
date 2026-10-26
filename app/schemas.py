@@ -19,4 +19,3 @@ class RedactResponse(TypedDict):
     language: Language
     warnings: list[str]
     ner: dict
-    review: dict

@@ -60,6 +60,25 @@ def test_local_pipeline_has_no_network(monkeypatch):
     monkeypatch.setattr(socket, 'connect', denied)
     assert anonymize(TEXT)['entities']
 
+
+def test_health_and_anonymization_api_work_without_network(client, monkeypatch):
+    def denied(*args, **kwargs):
+        raise AssertionError('Local processing attempted a network connection')
+
+    monkeypatch.setattr(socket, 'connect', denied)
+    health = client.get('/api/health')
+    assert health.status_code == 200
+    assert set(health.json) == {'status', 'local_only', 'ner', 'ocr', 'entity_types'}
+    assert health.json['ner']['engine'] == 'Microsoft Presidio (local)'
+    assert health.json['ner']['available']
+    assert len(health.json['entity_types']) == 12
+
+    response = client.post('/api/anonymize', json={'text': TEXT})
+    assert response.status_code == 200
+    assert set(response.json) == {'text', 'entities', 'counts', 'language', 'warnings', 'ner'}
+    assert 'Olivia Bennett' not in response.json['text']
+    assert '118/76 mmHg' in response.json['text']
+
 @pytest.mark.parametrize('body', [{}, {'text': ''}, {'text': 42}, {'text':'a'*100001},
     {'text': 'hello', 'enabled': ['INVALID']}, {'text':'hello', 'mode':'invalid'}])
 def test_bad_requests(client, body):

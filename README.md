@@ -1,6 +1,6 @@
 # Filter — Local PII / PHI anonymizer
 
-Flask + React application using **Microsoft Presidio Analyzer**, with optional **local Ollama context review**, to identify private information before sharing text with an LLM. **Detection, parsing, language identification, NLP, OCR and optional AI review run locally; no external LLM APIs are used.** No API keys or Azure services are needed.
+Flask + React application using **Microsoft Presidio Analyzer** to identify private information before sharing text with an LLM. **Detection, parsing, language identification, NLP and OCR run locally; no LLM inference or external LLM APIs are used.** No API keys or Azure services are needed.
 
 ## Quick start (Windows / PowerShell)
 
@@ -42,42 +42,7 @@ Numeric candidates are validated before they become protected masking spans. `ap
 
 Only a preinstalled `SPACY_MODEL` is loaded. Runtime model downloads and email public-suffix-list fetches are bypassed. Presidio document/context logging is suppressed. A missing Presidio package/model produces an unavailable health state and HTTP 503 on anonymization; the app does not silently fall back to the previous detector. Install the dependencies and restart to recover.
 
-The app keeps its existing overlap handling and consistent replacement tokens after detection returns entity spans. Presidio identifies baseline entities; optional local AI reviews ambiguous matches and finds contextual secrets. Replacement rendering remains local application code.
-
-### Local LLM context review (Ollama)
-
-The app supports Ollama's local HTTP API with [structured JSON output](https://docs.ollama.com/capabilities/structured-outputs). Qwen 2.5 1.5B is the configured default for this smaller local trial. Downloading the runtime/model requires Internet during **setup**; documents are never sent to the model registry.
-
-For a standard Ollama installation, install it from [Ollama's official Windows instructions](https://docs.ollama.com/windows). In the terminal that starts Ollama:
-
-```powershell
-$env:OLLAMA_NO_CLOUD = '1'
-$env:OLLAMA_HOST = '127.0.0.1:11434'
-$env:OLLAMA_DEBUG = '0'
-ollama serve
-```
-
-If another Ollama instance is already running, quit it before starting this local-only instance. In a second terminal, download the model once:
-
-```powershell
-ollama pull qwen2.5:1.5b
-```
-
-This workspace uses a portable official runtime in `.tools/ollama/` and model weights in `.tools/ollama-models/`, both ignored by Git. `start.bat` starts the portable runtime hidden when port 11434 is free, with cloud features disabled. You can also run `start-local-ai.ps1` to keep the runtime in a dedicated terminal. To pull into the portable runtime's model directory after starting it:
-
-```powershell
-.tools/ollama/ollama.exe pull qwen2.5:1.5b
-```
-
-Keep Flask and Ollama running. The app checks the configured model's local weights before enabling AI review. Open **Detection settings → Local AI review**; use **Check local AI** after starting/downloading the model. When available, review is enabled by default on a fresh page, and the main button reads **Anonymize with local AI**. Turn it off for Presidio-only processing.
-
-Review is limited to 12,000 characters per request, processed in chunks with 256 characters of surrounding context. Presidio-only requests retain the 100,000-character limit. One AI review runs at a time, with a 180-second inference budget. CPU/partial-GPU inference can take a minute or longer. The app never silently truncates a document or returns a partial AI review; timeout/malformed-output errors let you retry or explicitly choose Presidio-only processing.
-
-The local model can reject uncertain statistical NAME/LOCATION detections. Each ambiguous term gets a focused role classification with up to 200 surrounding characters on either side, bounded to its paragraph; a software/pet exemption also requires matching context cues. Explicit personal fields, repeated names established by those fields, and structured IDs/contact/medical patterns cannot be removed by the model. Additional model-discovered spans are restricted to `SECRET` credential values when supported credential cues are present (passwords, PINs, API keys, recovery codes, tokens and security answers). For example, a pet name disclosed as a PIN is masked. Credential extraction is a separate task restricted to cue-containing paragraphs (up to 700 characters), or a bounded window around each cue in longer paragraphs. This prevents a PIN mention in one paragraph from labeling unrelated software/personal fields as secrets. The model cannot introduce new generic names/locations, which produced false positives in the smaller model's initial trial. Presidio handles those categories. The app verifies every text/occurrence against the original and retries invalid credential JSON once within the same time budget, then rejects further invalid output. Secret values are masked in all exact occurrences. If there are no ambiguous matches or credential cues, no document text needs to be sent to the model; the UI states that local AI was not needed.
-
-Only literal loopback HTTP addresses (or `localhost`, normalized to `127.0.0.1`) are accepted. Environment proxies, redirects, remote endpoint names, cloud model tags and models without local GGUF metadata are blocked. The included runtime launcher also sets `OLLAMA_NO_CLOUD=1`. Run only a trusted local Ollama service; a malicious local service or administrator is outside this boundary. No cloud service or external LLM API is used.
-
-The model receives document text as untrusted data in a system-constrained JSON classification request. Its instructions cannot override fixed identifier protection or enable tools/network access. Prompt injection and model classification mistakes remain possible: exact-substring validation verifies text provenance, not semantic correctness. Credential discovery is conservative and cue-based; unusual phrasing or unsupported languages may be missed. Review the output. Ollama retains model weights/KV allocations in RAM for up to five minutes; Filter sends a fresh request with no conversation history and does not store prompts or model replies. Keep Ollama debug logging disabled.
+The app keeps its existing overlap handling and consistent replacement tokens after detection returns entity spans. Presidio identifies sensitive spans with local recognizers and context validation. Replacement rendering remains local application code.
 
 ### Enable image and scanned-PDF OCR
 
@@ -133,7 +98,6 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the local Flask server. No pe
 - Identify language with deterministic, seeded `langdetect`; show its code and probability estimate after processing.
 - Detect names, locations, SSNs, context-labeled national IDs, Aadhaar-shaped numbers, PAN-shaped IDs, dates and DOBs, emails, phones, MRNs, lab accession/sample/barcode IDs, street addresses and postal codes.
 - Use **Microsoft Presidio Analyzer** with a preinstalled offline spaCy model, built-in local recognizers and custom document/medical recognizers. Technical context reduces false person/location matches for software names. Priority-based overlap handling masks the entire connected span. Full repeated names/values receive consistent tokens within a request.
-- Optionally review uncertain name/location matches and find contextual secrets with a local Ollama model. Confirmed results use the same highlights, copy and export workflow; secrets use `[SECRET_1]` tags.
 - Choose semantic tokens such as `[NAME_1]`, `[DATE_OF_BIRTH_1]`, `[SSN_MASKED_1]`, `[LAB_ID_1]`, `[REDACTED]`, or solid blocks.
 - Review monochrome entity highlights, language, category counts and engine warnings. Entity types use labels and distinct border patterns rather than color. Choose detection categories.
 - Use a black, white and neutral grayscale interface with a 12px minimum font size, including mobile layouts, tooltips, dialogs and badges. Editor text is 14px.
@@ -152,7 +116,6 @@ app/
   presidio_engine.py Local Presidio initialization, health and detection adapter
   presidio_recognizers.py Offline NLP, built-in and custom document recognizers
   technical_context.py Scoped software-term disambiguation
-  local_llm.py     Loopback-only Ollama transport, schema validation and context review
   nlp.py           Explicit contextual name/location fields
   language.py      Local statistical language detection
   redactor.py      Overlap resolution and consistent substitutions
@@ -173,7 +136,6 @@ tests/
 requirements.txt       Python libraries, including Presidio Analyzer and spaCy
 requirements-ner.txt   Libraries plus bundled English model
 Dockerfile             Complete deployment including Tesseract
-start-local-ai.ps1     Portable Ollama launcher with cloud features disabled
 ```
 
 ## API
@@ -182,7 +144,7 @@ start-local-ai.ps1     Portable Ollama launcher with cloud features disabled
 | --- | --- | --- | --- |
 | GET | `/api/health` | None | Local engine, NER/model and OCR availability |
 | POST | `/api/extract` | Multipart `file` | `{ "text": "..." }` |
-| POST | `/api/anonymize` | JSON `text`, optional `mode`, `enabled`, boolean `use_local_llm` | Masked text, entity offsets, counts, language, warnings, review metadata |
+| POST | `/api/anonymize` | JSON `text`, optional `mode`, `enabled` | Masked text, entity offsets, counts, language and warnings |
 | POST | `/api/export/pdf` | JSON `text` (the anonymized output) | PDF attachment |
 
 Example:
@@ -192,8 +154,6 @@ Example:
 ```
 
 Modes: `tags`, `redact`, `blocks`. `enabled` defaults to all types; an empty list intentionally disables all detection. Entity `start`/`end` offsets are Python Unicode code-point offsets into the original input, with an exclusive end. The React viewer converts text to code points before slicing, including for emoji.
-
-API callers opt into AI review with `"use_local_llm": true`; it defaults to `false` for API compatibility. `SECRET` is the added category for local-AI-discovered credentials. A successful review returns `review.used`, model name and span counts. Errors return HTTP 503 without a partial result. `/api/health` includes `local_llm` availability, selected model and input limit; health checks do not send document text.
 
 For image or scanned-PDF OCR, `/api/extract` additionally returns `warnings` and `ocr` metadata (word confidence estimate, page count, uncertain-word count and source dimensions). These warnings remain visible through anonymization. Low-resolution previews cannot reliably reproduce tiny, blurred or cropped characters; use the original PDF or a sharper scan when possible. More extracted text does not imply that names and identifiers were read correctly. The app does not use an LLM to guess missing text.
 
@@ -207,9 +167,6 @@ The PDF endpoint exports the supplied text; API callers must send the anonymized
 | `PORT` | `5000` | Server port |
 | `SPACY_MODEL` | `en_core_web_sm` | Name or path of a preinstalled local model |
 | `REQUIRE_NER` | unset | Set `1` to refuse startup if Presidio or its model is unavailable |
-| `LOCAL_LLM_ENABLED` | `1` | Allow optional local AI review (`0` disables it) |
-| `LOCAL_LLM_URL` | `http://127.0.0.1:11434` | Loopback-only Ollama server; not an external API URL |
-| `LOCAL_LLM_MODEL` | `qwen2.5:1.5b` | Preinstalled local model tag; cloud tags are rejected |
 | `TESSERACT_CMD` | `tesseract` | Local executable path |
 | `OCR_LANG` | `eng` | Preinstalled Tesseract language(s) |
 | `PDF_FONT` | auto-detected | Local TTF with the characters needed for export |
@@ -221,7 +178,6 @@ The standard setup installs Presidio and the English model. Installing `requirem
 
 - Original text is sent only to the app's Flask origin. Run it on your computer to keep content on your computer. A remote deployment receives originals on that server.
 - No analytics, remote fonts, CDN scripts, external LLM SDKs, database, cookies, document history or browser persistence.
-- Optional AI review sends originals only to a verified loopback Ollama endpoint on the same computer. It never uses remote LLM APIs, proxies, redirects, auto-pulls or cloud models. Turn it off to retain the Presidio-only path without model inference. The standard Docker image contains Presidio/OCR; it does not bundle Ollama or model weights. Run a local model service in the same container/network namespace for this loopback-only integration, or use the Windows/native setup.
 - APIs use POST bodies, `Cache-Control: no-store`, same-origin checks, trusted Host checks, restrictive CSP, frame denial and MIME-sniffing prevention. The frontend renders untrusted documents as React text nodes.
 - Uploaded content is read into memory and not explicitly saved. The configured Waitress input-buffer threshold is above the entire allowed request size to avoid request-body disk spooling. Flask uses an in-memory upload stream. Tesseract creates temporary local image/text files and cleans them after OCR; use an encrypted local temporary volume or the Docker tmpfs for sensitive use.
 - No document body logging; parser exception details are not returned or logged by this app. pypdf warnings are suppressed. OS swap, crash dumps, clipboard history, downloads, reverse proxies and host monitoring are outside this app's memory-retention guarantees.
@@ -239,11 +195,3 @@ npm.cmd --prefix frontend run build
 ```
 
 Tests exercise the real Presidio engine, preservation of technical skills and clinical measurements, masking modes, category filtering, Unicode offsets, deterministic language detection, cold-start and detection with network/downloads blocked, missing-model behavior, log privacy, upload validation, TXT/DOCX/PDF extraction, PDF output, cross-origin rejection, security headers and parser error privacy. A separate integration check for actual OCR can be run after installing Tesseract. No real patient records are included in fixtures.
-
-The default suite also tests local-AI endpoint/model restrictions, JSON validation, redirects/proxies, false-positive review, protected fields, chunk offsets, secrets, disabled categories and safe failure. Real-model checks are opt-in after local weights are installed:
-
-```powershell
-$env:RUN_LOCAL_LLM_TESTS = '1'
-.venv/Scripts/python.exe -m pytest tests/test_local_llm_integration.py -q
-Remove-Item Env:RUN_LOCAL_LLM_TESTS
-```

@@ -11,7 +11,7 @@ class Candidate:
     priority: int = 50
     protected: bool = False
 
-KINDS = ('NAME', 'DOB', 'DATE', 'EMAIL', 'PHONE', 'SSN', 'NATIONAL_ID', 'MRN', 'LAB_ID', 'ADDRESS', 'LOCATION', 'ZIP', 'SECRET')
+KINDS = ('NAME', 'DOB', 'DATE', 'EMAIL', 'PHONE', 'SSN', 'NATIONAL_ID', 'MRN', 'LAB_ID', 'ADDRESS', 'LOCATION', 'ZIP')
 MONTH = r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)'
 DATE = rf'\b(?:\d{{4}}[/-]\d{{1,2}}[/-]\d{{1,2}}|\d{{1,2}}[./-]\d{{1,2}}[./-]\d{{2,4}}|{MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?,?\s+\d{{4}}|\d{{1,2}}\s+{MONTH}\.?\s+\d{{4}})\b'
 RULES = [
